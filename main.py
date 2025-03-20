@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, render_template, redirect, json
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_cors import CORS
 import os
 import uuid
@@ -8,6 +9,19 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+
+app.secret_key = os.getenv('SECRET_KEY')
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User(user_id)
 
 BASE_URL = os.getenv('BASE_URL', 'http://127.0.0.1')
 
@@ -43,6 +57,46 @@ def upload_file():
 @app.route('/files/<filename>', methods=['GET'])
 def get_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin():
+    if request.method == 'GET':
+        if current_user.is_authenticated:
+            images = os.listdir(UPLOAD_FOLDER)
+            return render_template('admin.html', images = images)
+        return render_template('index.html')
+
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    if username == os.getenv('ADMIN_USERNAME') and password == os.getenv('ADMIN_PASSWORD'):
+        user = User(1)
+        login_user(user)
+        images = os.listdir(UPLOAD_FOLDER)
+        return render_template('admin.html', images=images)
+    
+    return render_template('index.html')
+
+@app.route('/logout', methods=['GET'])
+@login_required
+def logout():
+    logout_user()
+    return render_template('index.html')
+
+@app.route('/admin/manage', methods=['POST'])
+@login_required
+def manage():
+    file_name = request.form.get('file_name')
+    os.remove(os.path.join(UPLOAD_FOLDER, file_name))
+    return redirect('/admin')
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return jsonify({"error": "Page not found"}), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return jsonify({"error": "Internal server error"}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80)
