@@ -8,9 +8,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins=allowed_origins, supports_credentials=True, methods=['POST','GET'], allow_headers=["Authorization", "Content-Type"])
-
 allowed_origins = os.getenv("ALLOWED_URI", "").split(",")
+CORS(app, origins=allowed_origins, supports_credentials=True, methods=['POST','GET'], allow_headers=["Authorization", "Content-Type"])
 
 app.secret_key = os.getenv('SECRET_KEY')
 
