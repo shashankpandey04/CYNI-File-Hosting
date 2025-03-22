@@ -23,6 +23,11 @@ class User(UserMixin):
 def load_user(user_id):
     return User(user_id)
 
+@app.after_request
+def disable_cache(response):
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
 BASE_URL = os.getenv('BASE_URL', 'http://127.0.0.1')
 
 UPLOAD_FOLDER = 'images'
@@ -41,12 +46,15 @@ def upload_file():
         return jsonify({"error": "Unauthorized"}), 401
 
     token = auth_header.split(" ")[1]
-    valid_tokens = os.getenv("FILE_AUTH_TOKEN", "").split(",")
+    valid_tokens = [token.strip() for token in os.getenv("FILE_AUTH_TOKEN", "").split(",")]
 
     print(f"Received auth header: {auth_header}")
     print(f"Valid tokens: {valid_tokens}")
 
     if token not in valid_tokens:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if token.lower() not in map(str.lower, valid_tokens):
         return jsonify({"error": "Unauthorized"}), 401
 
     if 'file' not in request.files:

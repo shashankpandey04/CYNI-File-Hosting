@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Upload</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+
+    <div class="bg-white p-8 rounded-lg shadow-md w-96">
+        <h2 class="text-2xl font-bold mb-4">Upload Image</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*" required class="mb-4 border border-gray-300 rounded p-2 w-full" />
+            <button type="submit" class="bg-blue-500 text-white rounded p-2 w-full">Upload</button>
+        </form>
+        <div id="result" class="mt-4"></div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch('http://127.0.0.1/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer your_token_here',
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+            const resultDiv = document.getElementById('result');
+
+            if (response.ok) {
+                resultDiv.innerHTML = `<p class="text-green-500">${result.message}</p><p>File URL: <a href="${result.url}" class="text-blue-500">${result.url}</a></p>`;
+            } else {
+                resultDiv.innerHTML = `<p class="text-red-500">${result.error}</p>`;
+            }
+        });
+    </script>
+
+</body>
+</html>
