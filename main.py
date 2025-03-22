@@ -37,9 +37,16 @@ def allowed_file(filename):
 @app.route('/upload', methods=['POST'])
 def upload_file():
     auth_header = request.headers.get("Authorization")
+    if auth_header is None or not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    token = auth_header.split(" ")[1]
     valid_tokens = os.getenv("FILE_AUTH_TOKEN", "").split(",")
 
-    if auth_header not in valid_tokens:
+    print(f"Received auth header: {auth_header}")
+    print(f"Valid tokens: {valid_tokens}")
+
+    if token not in valid_tokens:
         return jsonify({"error": "Unauthorized"}), 401
 
     if 'file' not in request.files:
