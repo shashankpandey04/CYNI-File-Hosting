@@ -8,7 +8,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=allowed_origins, supports_credentials=True, methods=['POST','GET'], allow_headers=["Authorization", "Content-Type"])
+
+allowed_origins = os.getenv("ALLOWED_URI", "").split(",")
 
 app.secret_key = os.getenv('SECRET_KEY')
 
@@ -41,15 +43,20 @@ def allowed_file(filename):
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    if request.method == 'OPTIONS':
+        print("Handling CORS preflight")
+        return jsonify({"status": "OK"}), 200
+
+    print("🚀 Upload route accessed")
     auth_header = request.headers.get("Authorization")
     if auth_header is None or not auth_header.startswith("Bearer "):
         return jsonify({"error": "Unauthorized"}), 401
 
+    print(request.headers)
     token = auth_header.split(" ")[1]
     valid_tokens = [token.strip() for token in os.getenv("FILE_AUTH_TOKEN", "").split(",")]
 
-    print(f"Received auth header: {auth_header}")
-    print(f"Valid tokens: {valid_tokens}")
+    print(f"FILE_AUTH_TOKEN: {os.getenv('FILE_AUTH_TOKEN')}")
 
     if token not in valid_tokens:
         return jsonify({"error": "Unauthorized"}), 401
